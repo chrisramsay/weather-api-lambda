@@ -1,5 +1,5 @@
 from __future__ import print_function
-import json
+import logging, boto3, json
 
 """
 Ingests a JSON string like:
@@ -24,25 +24,21 @@ Ingests a JSON string like:
 
 """
 
-print('Loading function')
+TABLE = 'station'
+REGION = 'eu-west-1'
 
 def lambda_handler(event, context):
+    logging.getLogger().setLevel(logging.INFO)
+    print(process_reading(event))
+
+def process_reading(event_data):
+    """
+    Table has the format:
+        Primary partition key - readingts (String)
+        Primary sort key - timestamp (Number)
+    """
+    tbl = boto3.resource('dynamodb', region_name=REGION).Table(TABLE)
     try:
-        print("temp_dewpt = " + event['temp_dewpt'])
-        print("rain_day = " + event['rain_day'])
-        print("rain = " + event['rain'])
-        print("wind_ave = " + event['wind_ave'])
-        print("hum_in = " + event['hum_in'])
-        print("temp_out = " + event['temp_out'])
-        print("wind_dir = " + event['wind_dir'])
-        print("hum_out = " + event['hum_out'])
-        print("wind_gust = " + event['wind_gust'])
-        print("temp_apprt = " + event['temp_apprt'])
-        print("wind_chill = " + event['wind_chill'])
-        print("tdate = " + event['tdate'])
-        print("temp_in = " + event['temp_in'])
-        print("abs_pressure = " + event['abs_pressure'])
-        print("ttime = " + event['ttime'])
         readingts = '{0}{1}'.format(
             event['tdate'].replace('-', ''), event['ttime'].replace('%3A', '')
             )
