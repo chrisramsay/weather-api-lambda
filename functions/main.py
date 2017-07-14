@@ -1,5 +1,3 @@
-import os, logging, boto3, json, time, pymysql.cursors
-
 """
 Ingests a JSON string like:
 
@@ -22,8 +20,11 @@ Ingests a JSON string like:
     "wind_dir": 79
   }
 }
-
 """
+
+import os
+import logging
+import pymysql
 
 def lambda_process_handler(event, context):
     message = event['data']
@@ -33,17 +34,17 @@ def lambda_process_handler(event, context):
 def process_reading(data):
     try:
         for key, val in data.items():
-            if type(val) is float:
+            if isinstance(val) is float:
                 data[key] = int(val*100)
         # Get the keys in order
         keys = [f for f in iter(data.keys())]
         keys.sort()
-        insert_data = [k.get(f, 'NULL') for f in keys]
+        insert_data = [data.get(f, 'NULL') for f in keys]
         # Connect to the database
         connection = pymysql.connect(host=os.environ['host'],
-            user=os.environ['user'], password=os.environ['password'],
-            db=os.environ['db'], charset='utf8mb4',
-            cursorclass=pymysql.cursors.DictCursor)
+                                     user=os.environ['user'], password=os.environ['password'],
+                                     db=os.environ['db'], charset='utf8mb4',
+                                     cursorclass=pymysql.cursors.DictCursor)
         try:
             with connection.cursor() as cursor:
                 # Create a new record
@@ -55,4 +56,4 @@ def process_reading(data):
     except KeyError:
         return 'Failed to insert data'
     else:
-        return 'Done, entered data for {} ({})'.format(readingts, ts)
+        return 'Done'
