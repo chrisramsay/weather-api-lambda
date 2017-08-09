@@ -1,59 +1,180 @@
 """
-Ingests a JSON string like:
-
-{
-  "data": {
-    "hum_out": 72,
-    "wind_ave": 23.3,
-    "wind_gust": 74,
-    "temp_dewpt": 29.3,
-    "temp_apprt": 11.3,
-    "wind_chill": 1.5,
-    "tdate": "2016-12-23",
-    "rain": 70,
-    "rain_day": 74,
-    "abs_pressure": 1018,
-    "hum_in": 84,
-    "temp_out": 6,
-    "ttime": "10:29:54",
-    "temp_in": 18.5,
-    "wind_dir": 79
-  }
-}
+AWS Lambda code base for the weather-api
 """
 
 import os
 import logging
 import pymysql
 
-def lambda_process_handler(event, context):
-    message = event['data']
-    logging.getLogger().setLevel(logging.INFO)
-    print(process_reading(message))
+def get_connection():
+    # Connect to the database
+    return pymysql.connect(
+        host=os.environ['host'],
+        user=os.environ['user'],
+        password=os.environ['password'],
+        db=os.environ['db'],
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor
+    )
 
-def process_reading(data):
+def get_last_climate_reading_ts(event, context):
+    """
+    Return timestamp of last climate reading in database
+    """
+    logging.getLogger().setLevel(logging.INFO)
+    return last_climate()
+
+def get_last_soil_reading_ts(event, context):
+    """
+    Return timestamp of last soil temperature station reading in database
+    """
+    logging.getLogger().setLevel(logging.INFO)
+    return last_soil()
+
+def process_weather_station(data):
+    """
+    Processes handled weather station data
+    """
     try:
-        for key, val in data.items():
-            if isinstance(val) is float:
-                data[key] = int(val*100)
         # Get the keys in order
         keys = [f for f in iter(data.keys())]
         keys.sort()
         insert_data = [data.get(f, 'NULL') for f in keys]
-        # Connect to the database
-        connection = pymysql.connect(host=os.environ['host'],
-                                     user=os.environ['user'], password=os.environ['password'],
-                                     db=os.environ['db'], charset='utf8mb4',
-                                     cursorclass=pymysql.cursors.DictCursor)
+        connection = get_connection()
         try:
             with connection.cursor() as cursor:
                 # Create a new record
-                sql = "INSERT INTO `weather` (`abs_pressure`, `hum_in`, `hum_out`, `rain`, `rain_day`, `tdate`, `temp_apprt`, `temp_dewpt`, `temp_in`, `temp_out`, `ttime`, `wind_ave`, `wind_chill`, `wind_dir`, `wind_gust`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                sql = "INSERT INTO `station` (`abs_pressure`, `hum_in`, `hum_out`, `rain`, `rain_day`, `tdate`, `temp_apprt`, `temp_dewpt`, `temp_in`, `temp_out`, `ttime`, `wind_ave`, `wind_chill`, `wind_dir`, `wind_gust`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 cursor.execute(sql, (insert_data))
             connection.commit()
         finally:
             connection.close()
-    except KeyError:
-        return 'Failed to insert data'
+    except:
+        return 'FAIL'
     else:
-        return 'Done'
+        return None
+
+def process_climate(data):
+    """
+    Processes handled climate monitoring data
+    """
+    try:
+        # Get the keys in order
+        keys = [f for f in iter(data.keys())]
+        keys.sort()
+        insert_data = [data.get(f, 'NULL') for f in keys]
+        connection = get_connection()
+        try:
+            with connection.cursor() as cursor:
+                # Create a new record
+                sql = "INSERT INTO `climate` (`airflow`, `humidity`, `light`, `sound`, `tdate`, `temp`, `ttime`) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                cursor.execute(sql, (insert_data))
+            connection.commit()
+        finally:
+            connection.close()
+    except:
+        return 'FAIL'
+    else:
+        return None
+
+def process_soil_temps(data):
+    """
+    Processes handled soil temperature station data
+    """
+    try:
+        # Get the keys in order
+        keys = [f for f in iter(data.keys())]
+        keys.sort()
+        print(keys)
+        insert_data = [data.get(f, 'NULL') for f in keys]
+        connection = get_connection()
+        try:
+            with connection.cursor() as cursor:
+                # Create a new record
+                sql = "INSERT INTO `soil_temps` (`temp_concrete`, `temp_grass`, `soil_d`, `soil_m`, `soil_s`, `temp_system`, `tdate`, `ttime`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                print(sql)
+                print(insert_data)
+                cursor.execute(sql, (insert_data))
+            connection.commit()
+        finally:
+            connection.close()
+    except:
+        return 'FAIL'
+    else:
+        return None
+
+def last_climate():
+    """
+    Get last climate reading timestamp
+    """
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        sql = """
+        SELECT concat(s.tdate, ' ', MAX(s.ttime)) AS lastreading
+        FROM   (SELECT tdate,
+                       ttime
+                FROM   climate
+                WHERE  tdate = (SELECT MAX(tdate)
+                                FROM `climate`)) AS s
+        """
+        cursor.execute(sql)
+        data = cursor.fetchone()
+    except:
+        return 'FAIL'
+    else:
+        return data['lastreading']
+    finally:
+        connection.close()
+
+def last_soil():
+    """
+    Get last soil temperature reading timestamp
+    """
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        sql = """
+        SELECT concat(s.tdate, ' ', MAX(s.ttime)) AS lastreading
+        FROM   (SELECT tdate,
+                       ttime
+                FROM   soil_temps
+                WHERE  tdate = (SELECT MAX(tdate)
+                                FROM `soil_temps`)) AS s
+        """
+        cursor.execute(sql)
+        data = cursor.fetchone()
+    except:
+        return 'FAIL'
+    else:
+        return data['lastreading']
+    finally:
+        connection.close()
+
+################################################################################
+#                               LAMBDA HANDLERS                                #
+################################################################################
+
+def post_weather_station(event, context):
+    """
+    Weather station data ingestion handler
+    """
+    message = event['query']
+    logging.getLogger().setLevel(logging.INFO)
+    return process_weather_station(message)
+
+def post_climate(event, context):
+    """
+    Climate system data ingestion handler
+    """
+    message = event['query']
+    logging.getLogger().setLevel(logging.INFO)
+    return process_climate(message)
+
+def post_soil_temps(event, context):
+    """
+    Soil temperature station data ingestion handler
+    """
+    message = event['query']
+    logging.getLogger().setLevel(logging.INFO)
+    return process_soil_temps(message)
