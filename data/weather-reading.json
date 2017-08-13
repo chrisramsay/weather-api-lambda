@@ -1,1 +1,3 @@
-{"data": {"abs_pressure": 1018,"hum_in": 70,"hum_out": 66,"rain": 0,"rain_day": 0,"tdate": "2016-10-25","temp_apprt": 17.3,"temp_dewpt": 10.8,"temp_in": 19.3,"temp_out": 17.2,"ttime": "10%3A03%3A29","wind_ave": 0.3,"wind_chill": 17.2,"wind_dir": 90,"wind_gust": 1},"readingts": "20161025123445","timestamp": 123456673}
+{"data":
+    {"abs_pressure": 1018,"hum_in": 70,"hum_out": 66,"rain": 0,"rain_day": 0,"tdate": "2016-10-25","temp_apprt": 17.3,"temp_dewpt": 10.8,"temp_in": 19.3,"temp_out": 17.2,"ttime": "10%3A03%3A29","wind_ave": 0.3,"wind_chill": 17.2,"wind_dir": 90,"wind_gust": 1},"readingts": "20161025123445","timestamp": 123456673}
+}
