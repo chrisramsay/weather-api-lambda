@@ -33,6 +33,10 @@ VALUES
     (%s, %s, %s, %s, %s, %s, %s)
 """
 
+################################################################################
+#                              UTILITY FUNCTIONS                               #
+################################################################################
+
 def get_connection():
     """
     Returns a connection to the database
@@ -69,6 +73,8 @@ def process_reading(data, sql_template):
         LOGGER.error('Exception occurred: {0}'.format(exc))
         return 'FAIL'
     else:
+        LOGGER.info('Processed data successfully for [{0} {1}]'.format(
+            data['tdate'], data['ttime']))
         return None
 
 def last_reading(table):
@@ -93,6 +99,8 @@ def last_reading(table):
         LOGGER.error('Exception occurred: {0}'.format(exc))
         return 'FAIL'
     else:
+        LOGGER.info('Processed data successfully for {0}'.format(
+            data['lastreading']))
         return data['lastreading']
     finally:
         connection.close()
@@ -105,22 +113,19 @@ def post_weather_station(event, context):
     """
     Weather station data ingestion handler
     """
-    message = event['query']
-    return process_reading(message, STATION_SQL)
+    return process_reading(event['query'], STATION_SQL)
 
 def post_climate(event, context):
     """
     Climate system data ingestion handler
     """
-    message = event['query']
-    return process_reading(message, CLIMATE_SQL)
+    return process_reading(event['query'], CLIMATE_SQL)
 
 def post_soil_temps(event, context):
     """
     Soil temperature station data ingestion handler
     """
-    message = event['query']
-    return process_reading(message, SOIL_TEMPS_SQL)
+    return process_reading(event['query'], SOIL_TEMPS_SQL)
 
 def get_last_climate_reading_ts(event, context):
     """
