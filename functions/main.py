@@ -1,5 +1,5 @@
 """
-AWS Lambda code base for the weather-api
+AWS Lambda code base for the weather-api.
 """
 
 import os
@@ -31,6 +31,15 @@ INSERT INTO `climate`
     (`airflow`, `humidity`, `light`, `sound`, `tdate`, `temp`, `ttime`)
 VALUES
     (%s, %s, %s, %s, %s, %s, %s)
+"""
+
+NETSPEED_SQL = """
+INSERT INTO `netspeed`
+    (`bytes_received`, `bytes_sent`, `cc`, `country`, `d`, `download`, `host`, 
+    `lat`, `latency`, `lon`, `name`, `ping`, `server_id`, `sponsor`, `tdate`,
+    `ttime`,`upload`, `url`, `url2`) 
+VALUES
+    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 """
 
 ################################################################################
@@ -138,3 +147,15 @@ def get_last_soil_reading_ts(event, context):
     Return timestamp of last soil temperature station reading in database
     """
     return last_reading('soil_temps')
+
+def get_last_netspeed_reading_ts(event, context):
+    """
+    Return timestamp of last speed test reading in database
+    """
+    return last_reading('netspeed')
+
+def post_netspeed(event, context):
+    """
+    Speed test data ingestion handler
+    """
+    return process_reading(event['query'], NETSPEED_SQL)
