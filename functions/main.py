@@ -1,5 +1,5 @@
 """
-AWS Lambda code base for the weather-api
+AWS Lambda code base for the weather-api.
 """
 
 import os
