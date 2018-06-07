@@ -34,7 +34,7 @@ VALUES
 """
 
 NETSPEED_SQL = """
-INSERT INTO `station`
+INSERT INTO `netspeed`
     (`bytes_received`, `bytes_sent`, `cc`, `country`, `d`, `download`, `host`, 
     `lat`, `latency`, `lon`, `name`, `ping`, `server_id`, `sponsor`, `tdate`,
     `ttime`,`upload`, `url`, `url2`) 
